@@ -1,0 +1,8 @@
+releases:
+  1.0.0:
+    release_date: 17-12-2025
+    changes:
+      major_changes:
+        - Initial release of sudo role
+      minor_changes:
+        - Adds as SUDO user to the system and make a password-less access
