@@ -1,4 +1,3 @@
-# code: language=ansible
 ---
 - name: Init netbox-sync
   tags:
@@ -6,7 +5,7 @@
     - netbox-sync
   block:
     - name: "Step 1: Get all VM and Container data from Proxmox"
-      community.general.proxmox_vm_info:
+      community.proxmox.proxmox_vm_info:
         api_host: "{{ pve_host }}"
         api_user: "{{ pve_user }}"
         api_password: "{{ pve_password }}"
@@ -21,10 +20,56 @@
         validate_certs: false
         data:
           name: "{{ item.name }}"
-          cluster: "{{ netbox_cluster_name }}" 
+          cluster: "{{ netbox_cluster_name }}"
           status: "active"
           vcpus: "{{ item.cpus | int }}"
           memory: "{{ (item.maxmem / 1024 / 1024) | int }}"
         state: present
       loop: "{{ pve_results.proxmox_vms }}"
-      when: item.template == false
+      when: not item.template
+
+    - name: "Step 3: Ensure eth0 Interface exists for each VM"
+      netbox.netbox.netbox_vm_interface:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: false
+        data:
+          virtual_machine: "{{ item.name }}"
+          name: "eth0"
+          enabled: true
+        state: present
+      loop: "{{ pve_results.proxmox_vms }}"
+      when: not item.template
+
+    - name: "Step 4: Get IP information from Guest Agent"
+      community.proxmox.proxmox_nic:
+        api_host: "{{ pve_host }}"
+        api_user: "{{ pve_user }}"
+        api_password: "{{ pve_password }}"
+        api_port: "{{ pve_port | default(8006) }}"
+        vmid: "{{ item.vmid }}"
+        interface: "net0"
+        validate_certs: false
+      loop: "{{ pve_results.proxmox_vms }}"
+      register: pve_nics
+      when: 
+        - not item.template 
+        - item.status == "running"
+
+    - name: "Step 5: Assign IP Addresses to Interfaces"
+      netbox.netbox.netbox_ip_address:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: false
+        data:
+          address: "{{ (item.1.nics | selectattr('ip-addresses', 'defined') | map(attribute='ip-addresses') | flatten | select('search', '^[0-9]') | first) }}"
+          status: "active"
+          assigned_object:
+            virtual_machine: "{{ item.0.name }}"
+            name: "eth0"
+        state: present
+      loop: "{{ pve_results.proxmox_vms | zip(pve_nics.results) | list }}"
+      when:
+        - not item.0.template
+        - item.1.nics is defined
+        - (item.1.nics | selectattr('ip-addresses', 'defined') | list | length > 0)
