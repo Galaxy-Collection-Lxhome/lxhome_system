@@ -1,0 +1,24 @@
+# code: language=ansible
+---
+- name: Init python environment
+  tags:
+    - never
+    - init_python_venv
+    - netbox-sync
+  block:
+    - name: 1. Install Python3 and Venv tools
+      ansible.builtin.package:
+        name:
+          - python3
+          - python3-venv
+          - python3-pip
+        state: present
+
+    - name: 2. Create Virtual Environment
+      ansible.builtin.command:
+        cmd: "python3 -m venv {{ tmp_venv_path }}"
+        creates: "{{ tmp_venv_path }}"
+
+    - name: 3. Activating the Virtual env
+      ansible.builtin.shell: ". {{ tmp_venv_path }}bin/activate"
+        

@@ -1,0 +1,14 @@
+# code: language=ansible
+---
+- name: Installing install_dependencies
+  tags:
+    - never
+    - netbox-sync
+    - install_dependencies
+  block:
+    - name: Install dependencies into the Venv
+      ansible.builtin.pip:
+        name: 
+          - proxmoxer
+          - pynetbox
+        virtualenv: "{{ tmp_venv_path }}"

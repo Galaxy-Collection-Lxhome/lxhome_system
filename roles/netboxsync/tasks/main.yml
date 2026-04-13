@@ -1,0 +1,14 @@
+# code: language=ansible
+---
+- name: Including role netbox-sync to update netbox's inventory
+  ansible.builtin.include_tasks: install_dependencies.yml
+  tags:
+    - never
+    - install_dependencies
+    - netbox-sync
+
+- name: Including role netbox-sync to update netbox's inventory
+  ansible.builtin.include_tasks: netbox-sync.yml
+  tags:
+    - never
+    - netbox-sync

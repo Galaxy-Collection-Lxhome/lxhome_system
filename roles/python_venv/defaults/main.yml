@@ -1,0 +1,4 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for python_venv
+tmp_venv_path: "{{ tmp_venv_path }}"

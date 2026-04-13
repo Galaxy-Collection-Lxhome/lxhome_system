@@ -1,0 +1,30 @@
+# code: language=ansible
+---
+- name: Init netbox-sync
+  tags:
+    - never
+    - netbox-sync
+  block:
+    - name: "Step 1: Get all VM and Container data from Proxmox"
+      community.general.proxmox_vm_info:
+        api_host: "{{ pve_host }}"
+        api_user: "{{ pve_user }}"
+        api_password: "{{ pve_password }}"
+        api_port: "{{ pve_port | default(8006) }}"
+        validate_certs: false
+      register: pve_results
+
+    - name: "Step 2: Ensure each Proxmox VM exists in NetBox"
+      netbox.netbox.netbox_virtual_machine:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: false
+        data:
+          name: "{{ item.name }}"
+          cluster: "{{ netbox_cluster_name }}" 
+          status: "active"
+          vcpus: "{{ item.cpus | int }}"
+          memory: "{{ (item.maxmem / 1024 / 1024) | int }}"
+        state: present
+      loop: "{{ pve_results.proxmox_vms }}"
+      when: item.template == false

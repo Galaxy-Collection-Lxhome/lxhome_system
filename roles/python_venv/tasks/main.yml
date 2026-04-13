@@ -1,0 +1,8 @@
+# code: language=ansible
+---
+- name: Including role to initalize the python venv
+  ansible.builtin.include_tasks: init_python_venv.yml
+  tags:
+    - never
+    - netbox-sync
+    - init_python_venv
