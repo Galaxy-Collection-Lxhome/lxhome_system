@@ -21,4 +21,3 @@
 
     - name: 3. Activating the Virtual env
       ansible.builtin.shell: ". {{ tmp_venv_path }}bin/activate"
-        
